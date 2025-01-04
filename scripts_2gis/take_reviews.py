@@ -1,7 +1,8 @@
 import httpx
+from fastapi import HTTPException
 
 
-async def fetch_reviews_async(filial_id, access_token, limit=20, pin_requested_first=False, without_answer=None,
+async def fetch_reviews_async(*, filial_id, access_token, limit=20, pin_requested_first=False, without_answer=None,
                               rating=None, offset_date=None):
     """
     Выполняет GET-запрос для получения отзывов и возвращает JSON-ответ.
@@ -12,8 +13,8 @@ async def fetch_reviews_async(filial_id, access_token, limit=20, pin_requested_f
         limit (int): Лимит отзывов (по умолчанию 20).
         pin_requested_first (bool): Флаг "pinRequestedFirst" (по умолчанию False).
         without_answer (bool): Флаг "withoutAnswer" (если None, параметр не передается).
-        rating (int): Фильтр по рейтингу (если None, параметр не передается).
-        offset_date (int): Фильтр по дате, указываем дату после которой получаем отзывы
+        rating (str): Фильтр по рейтингу (если None, параметр не передается).
+        offset_date (str): Фильтр по дате, указываем дату после которой получаем отзывы
 
     Returns:
         dict: Словарь с ключами:
@@ -102,6 +103,11 @@ async def fetch_reviews_async(filial_id, access_token, limit=20, pin_requested_f
     async with httpx.AsyncClient() as client:
         response = await client.get(url, headers=headers, params=params)
 
+        if response.status_code != 200:
+            raise HTTPException(
+                status_code=response.status_code,
+                detail=f"Error from 2GIS API: {response.text}"
+            )
     try:
         # Если ответ в формате JSON
         response_data = response.json()

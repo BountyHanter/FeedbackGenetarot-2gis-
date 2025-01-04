@@ -1,5 +1,9 @@
+import asyncio
+from pprint import pprint
+
 import httpx
-import requests
+from fastapi import HTTPException
+
 
 async def fetch_user_info_async(access_token: str) -> dict:
     """
@@ -42,21 +46,42 @@ async def fetch_user_info_async(access_token: str) -> dict:
     url = "https://api.account.2gis.com/api/1.0/users"
     headers = {
         "Authorization": f"Bearer {access_token}",
+        "Accept": "application/json",
     }
 
     async with httpx.AsyncClient() as client:
-        response = await client.get(url, headers=headers)
-
-    if response.status_code == 200:
         try:
-            return response.json()
-        except ValueError:
-            return {"error": "Response is not in JSON format"}
-    else:
-        return {"error": f"Error: {response.status_code}", "response": response.text}
+            response = await client.get(url, headers=headers)
+            response.raise_for_status()  # Вызывает исключение при статусах 4xx и 5xx
+        except httpx.HTTPStatusError as exc:
+            # Обработка ошибок статуса HTTP
+            if exc.response.status_code == 401:
+                raise HTTPException(
+                    status_code=401,
+                    detail=f"Unauthorized: Invalid or expired access token. Response: {exc.response.text}"
+                )
+            else:
+                raise HTTPException(
+                    status_code=exc.response.status_code,
+                    detail=f"HTTP error {exc.response.status_code}: {exc.response.text}"
+                )
+        except httpx.RequestError as exc:
+            # Обработка ошибок сети
+            raise HTTPException(
+                status_code=500,
+                detail=f"Request failed: {str(exc)}"
+            )
 
+    # Попытка преобразования ответа в JSON
+    try:
+        return response.json()
+    except ValueError:
+        raise HTTPException(
+            status_code=500,
+            detail="Response is not in valid JSON format"
+        )
 
-async def fetch_filials_info_async(org_id: str, access_token: str) -> dict:
+async def fetch_filials_info_async(*, org_id: str, access_token: str) -> dict:
     """
     Выполняет GET-запрос к API /branches для получения информации о филиалах организации.
 
@@ -119,3 +144,51 @@ async def fetch_filials_info_async(org_id: str, access_token: str) -> dict:
         return response.json()
     except ValueError:
         return {"error": "Response is not in JSON format", "response": response.text}
+
+
+async def fetch_user_and_filials_info(access_token: str) -> list[dict]:
+    """
+    Получает информацию о пользователе и его филиалах.
+
+    Args:
+        access_token (str): Токен авторизации.
+
+    Returns:
+        list[dict]: Список из двух словарей:
+            - Первый словарь: Данные пользователя.
+            - Второй словарь: Данные о филиалах всех организаций пользователя.
+    """
+    # Получаем информацию о пользователе
+    user_info = await fetch_user_info_async(access_token)
+    if "error" in user_info:
+        return [{"error": "Failed to fetch user info", "details": user_info}]
+
+    # Извлекаем список организаций
+    org_ids = [org["id"] for org in user_info.get("result", {}).get("orgs", [])]
+    filials_info = {}
+
+    # Запрашиваем данные о филиалах для каждой организации
+    for org_id in org_ids:
+        filials = await fetch_filials_info_async(org_id=org_id, access_token=access_token)
+        if "error" in filials:
+            filials_info[org_id] = {"error": f"Failed to fetch filials for org_id {org_id}"}
+        else:
+            filials_info[org_id] = filials.get("result", {})
+
+    # Возвращаем оба результата
+    return [
+        {"user_info": user_info},
+        {"filials_info": filials_info}
+    ]
+
+if __name__ == "__main__":
+    # Токен авторизации
+    access_token = "2aeb20754b91f3241430fc96fb9a77b1cf3bd799"
+
+    # Запуск асинхронной функции в синхронной среде
+    async def run():
+        result = await fetch_user_and_filials_info(access_token)
+        pprint(result)
+
+    # Используем asyncio для запуска асинхронного кода
+    asyncio.run(run())

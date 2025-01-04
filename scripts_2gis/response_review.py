@@ -1,7 +1,10 @@
 import httpx
+from fastapi import HTTPException
+
+from models.reviews_model import Reviews
 
 
-async def post_review_async(access_token: str, review_id: str, text: str, is_official: bool = False) -> dict:
+async def post_review_async(*, access_token: str, review_id: int, text: str, is_official: bool = False) -> dict:
     """
     Асинхронно отправляет комментарий к отзыву в API 2ГИС.
 
@@ -26,6 +29,11 @@ async def post_review_async(access_token: str, review_id: str, text: str, is_off
 
         # Проверяем статус-код
         if response.status_code != 200:
-            raise Exception(f"Error: {response.status_code}, {response.text}")
-
+            raise HTTPException(
+                status_code=response.status_code,
+                detail=f"Error from 2GIS API: {response.text}"
+            )
+        review = await Reviews.filter(review_id=review_id).first()
+        review.comments_count += 1
+        await review.save()
         return response.json()

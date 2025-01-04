@@ -4,15 +4,18 @@ import httpx
 
 from fake_useragent import UserAgent
 
+from utils.password import decrypt_password
 
-async def take_access_token_async(login: str, password: str) -> str:
+
+async def take_access_token_async(login: str, hashed_password: str) -> str:
     """
     Асинхронно получает токен доступа для заданных логина и пароля.
 
     :param login: Логин пользователя.
-    :param password: Пароль пользователя.
+    :param hashed_password: Зашифрованный пароль пользователя.
     :return: Токен доступа.
     """
+    password = decrypt_password(hashed_password)
     # Генерация случайных данных
     user_agent = UserAgent().random
     request_id = str(uuid.uuid4())  # Генерация уникального ID для запроса

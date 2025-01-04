@@ -1,7 +1,10 @@
+import asyncio
+
 import httpx
+from fastapi import HTTPException
 
 
-async def submit_complaint_async(access_token: str, review_id: str, text: str, is_no_client_complaint: bool = True) -> dict:
+async def submit_complaint_async(*, access_token: str, review_id: str, text: str, is_no_client_complaint: bool = False) -> dict:
     """
     Асинхронно отправляет жалобу на отзыв в API 2ГИС.
 
@@ -32,6 +35,12 @@ async def submit_complaint_async(access_token: str, review_id: str, text: str, i
 
     # Проверка успешности запроса
     if response.status_code != 200:
-        raise Exception(f"Failed to submit complaint: {response.status_code} {response.text}")
+        raise HTTPException(
+            status_code=response.status_code,
+            detail=f"Failed to submit complaint: {response.status_code} {response.text}"
+        )
 
     return response.json()
+
+if __name__ == "__main__":
+    asyncio.run(submit_complaint_async(access_token="718e1c3de2c1e960d40a902306a4449357a1fd58", review_id="124479532", text='1234'))

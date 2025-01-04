@@ -41,3 +41,6 @@ def encrypt_password(password: str) -> str:
     except Exception as e:
         raise ValueError(f"Failed to encrypt password: {e}")
 
+
+if __name__ == "__main__":
+    print(decrypt_password("gAAAAABnUteBVBwvtdNZ9UZT5o2ib61f3pVvwERH8FkYXt3CWK3wlWdZDD76ROuJxKOteS_qcpy5BUV4B3cxpBPztB3n7myzJg"))

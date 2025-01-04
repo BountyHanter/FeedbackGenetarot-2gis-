@@ -1,10 +1,26 @@
+import os
 from tortoise import Tortoise
+
+# Определяем базовую директорию (где находится текущий файл)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Указываем путь к базе данных
+DB_DIR = os.path.join(BASE_DIR, "db")
+if not os.path.exists(DB_DIR):
+    os.makedirs(DB_DIR)
+DATABASE_FILE = os.path.join(BASE_DIR, "db", "db.sqlite3")
+
+TORTOISE_ORM = {
+    "connections": {"default": f"sqlite://{DATABASE_FILE}"},
+    "apps": {
+        "models": {
+            "models": ["models.user_model", "models.user_stats_model", "models.reviews_model", "aerich.models"],
+            "default_connection": "default",
+        },
+    },
+}
 
 
 # Настройка Tortoise ORM
 async def init_db():
-    await Tortoise.init(
-        db_url="sqlite://db.sqlite3",  # Указываем SQLite как базу данных
-        modules={"models": ["models.user_model"]},
-    )
-    await Tortoise.generate_schemas()  # Автоматически создаёт таблицы, если их нет
+    await Tortoise.init(config=TORTOISE_ORM)
