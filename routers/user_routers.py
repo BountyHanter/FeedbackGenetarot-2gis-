@@ -27,7 +27,7 @@ async def create_or_update_user(user_data: UserCreate):
     try:
         user_info_and_filials = await fetch_user_and_filials_info(access_token)
     except Exception as e:
-        raise HTTPException(status_code=501, detail=f"Failed to fetch user and filials info: {e}")
+        raise HTTPException(status_code=501, detail=f"Не удалось получить информацию о пользователе и его филиалах: {e}")
 
     if existing_user:
         try:
@@ -46,7 +46,7 @@ async def create_or_update_user(user_data: UserCreate):
             }
 
         except Exception as e:
-            raise HTTPException(status_code=502, detail=f"Failed to update user: {e}")
+            raise HTTPException(status_code=502, detail=f"Не удалось обновить пользователя: {e}")
 
     else:
         # Если пользователь не существует, создаем нового
@@ -61,13 +61,13 @@ async def create_or_update_user(user_data: UserCreate):
                 )
 
             return {
-                "message": "User created successfully",
+                "message": "Пользователь успешно создан",
                 "id": user.id,
                 "user_info_and_filials": user_info_and_filials
             }
 
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to create user: {e}")
+            raise HTTPException(status_code=500, detail=f"Не удалось создать пользователя: {e}")
 
 
 @router.get("/get_user_info", status_code=200)
@@ -79,12 +79,12 @@ async def get_user_and_filials_info(main_user_id: int):
     # Проверяем, существует ли пользователь с таким user_id
     user = await User.get_or_none(main_user_id=main_user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
 
     # Проверяем, есть ли access_token
     access_token = user.access_token
     if not access_token:
-        raise HTTPException(status_code=403, detail="Access token not found for the user")
+        raise HTTPException(status_code=403, detail="Токен доступа для пользователя не найден")
 
     try:
         # Первый вызов fetch_user_and_filials_info
@@ -106,10 +106,10 @@ async def get_user_and_filials_info(main_user_id: int):
             except Exception as inner_e:
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Failed to refresh access token and fetch user info: {inner_e}",
+                    detail=f"Не удалось обновить токен доступа: {inner_e}",
                 )
         else:
-            raise HTTPException(status_code=500, detail=f"Failed to fetch user and filials info: {e}")
+            raise HTTPException(status_code=500, detail=f"Не удалось получить информацию о пользователе и его филиалах: {e}")
 
     return {"main_user_id": main_user_id, "data": result}
 
@@ -121,12 +121,12 @@ async def update_user(main_user_id: int, user_data: UserUpdate):
     """
     # Проверяем, передано ли хотя бы одно поле
     if not any([user_data.main_user_id, user_data.username, user_data.hashed_password]):
-        raise HTTPException(status_code=400, detail="At least one field must be provided")
+        raise HTTPException(status_code=400, detail="Необходимо указать хотя бы одно поле")
 
     # Проверяем, существует ли пользователь
     user = await User.get_or_none(main_user_id=main_user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
 
     # Обновляем данные
     try:
@@ -146,10 +146,10 @@ async def update_user(main_user_id: int, user_data: UserUpdate):
             await user.save()
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to update user: {e}")
+        raise HTTPException(status_code=500, detail=f"Не удалось обновить пользователя: {e}")
 
     return {
-        "message": "User updated successfully",
+        "message": "Пользователь успешно обновлён",
         "id": user.id,
         "updated_fields": user_data.dict(exclude_unset=True)
     }

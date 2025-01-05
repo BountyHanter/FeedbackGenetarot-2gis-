@@ -41,3 +41,7 @@ pip-delete-this-directory.txt
 # Игнорировать другие возможные временные файлы
 .DS_Store
 Thumbs.db
+
+db/
+
+migrations/

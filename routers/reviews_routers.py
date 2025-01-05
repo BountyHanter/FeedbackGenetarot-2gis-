@@ -60,7 +60,7 @@ async def download_reviews(
     # Выполняем запрос для получения отзывов
     try:
         reviews = await fetch_reviews_async(**params, access_token=access_token)
-        return {"message": "Reviews fetched successfully", "reviews": reviews}
+        return {"message": "Отзывы получены успешно", "reviews": reviews}
     except HTTPException as e:
         if e.status_code == 401:  # Если токен недействителен
             try:
@@ -78,12 +78,12 @@ async def download_reviews(
             except Exception as inner_e:
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Failed to refresh access token and retry: {inner_e}"
+                    detail=f"Не удалось обновить токен доступа: {inner_e}"
                 )
         elif e.status_code == 404:  # Если ресурс не найден
             raise HTTPException(status_code=404, detail=e.detail)
         else:  # Обработка других ошибок
-            raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+            raise HTTPException(status_code=500, detail=f"Неизвестная ошибка: {e}")
 
 
 @router.get("/get_reviews", status_code=200)
@@ -111,7 +111,7 @@ async def get_reviews_from_db(
                 offset_date_utc = datetime.fromisoformat(offset_date).astimezone(timezone.utc)
                 query = query.filter(created_at__lt=offset_date_utc)
             except ValueError:
-                raise HTTPException(status_code=400, detail="Invalid offset_date format. Use ISO 8601 format.")
+                raise HTTPException(status_code=400, detail="Недопустимый формат offset_date. Используйте формат ISO 8601.")
 
         rating_list = [int(r) for r in rating.split(',')] if rating else None
 
@@ -160,7 +160,7 @@ async def get_reviews_from_db(
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+        raise HTTPException(status_code=500, detail=f"Неизвестная ошибка: {e}")
 
 
 @router.post("/post_review_reply/{review_id}", status_code=200)

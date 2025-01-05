@@ -6,7 +6,6 @@ set -e
 # Переход в рабочую директорию
 cd /app
 
-
 # Проверяем доступность Redis
 echo "Проверка доступности Redis..."
 until redis-cli -h redis ping > /dev/null 2>&1; do
@@ -15,7 +14,22 @@ until redis-cli -h redis ping > /dev/null 2>&1; do
 done
 echo "Redis доступен."
 
+# Инициализация базы данных с помощью Aerich с таймаутом 10 секунд
+echo "Инициализация базы данных Aerich..."
+set +e  # Временно отключаем завершение при ошибке
+timeout 10s aerich init-db
+result=$?  # Сохраняем код возврата
+set -e  # Включаем завершение при ошибке
+
+if [ $result -eq 124 ]; then
+    echo "Предупреждение: Таймаут при инициализации базы данных Aerich. Продолжаем выполнение..."
+elif [ $result -ne 0 ]; then
+    echo "Ошибка: Не удалось инициализировать базу данных Aerich."
+    exit 1
+else
+    echo "База данных успешно инициализирована."
+fi
+
 # Запускаем приложение
 echo "ENTRYPOINT завершён. Передача управления CMD..."
 exec "$@"
-
